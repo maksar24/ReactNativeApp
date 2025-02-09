@@ -70,7 +70,7 @@ const LoginScreen = ({ navigation }) => {
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS == "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 80}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 80}
       >
         <ImageBackground
           source={require("../../assets/images/bg-image.png")}

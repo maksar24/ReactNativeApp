@@ -1,27 +1,36 @@
-import { View, Text, Image, StyleSheet } from "react-native";
+import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { Colors } from "../constants/Colors";
+import { useNavigation } from "@react-navigation/native";
 
 const PostCard = ({ image, title, comments, likes, location }) => {
+  const navigation = useNavigation();
+
   return (
     <View style={styles.container}>
       <Image source={image} style={styles.image} resizeMode="cover" />
       <Text style={styles.title}>{title}</Text>
       <View style={styles.infoContainer}>
         <View style={styles.statsContainer}>
-          <View style={styles.statsItem}>
+          <TouchableOpacity
+            style={styles.statsItem}
+            onPress={() => navigation.navigate("Comments")}
+          >
             <Icon name="comment-text-outline" size={24} color={Colors.orange} />
             <Text style={styles.statsText}>{comments}</Text>
-          </View>
+          </TouchableOpacity>
           <View style={styles.statsItem}>
             <Icon name="thumb-up-outline" size={24} color={Colors.orange} />
             <Text style={styles.statsText}>{likes}</Text>
           </View>
         </View>
-        <View style={styles.locationContainer}>
+        <TouchableOpacity
+          style={styles.locationContainer}
+          onPress={() => navigation.navigate("Map")}
+        >
           <Icon name="map-marker-outline" size={24} color={Colors.text_gray} />
           <Text style={styles.locationText}>{location}</Text>
-        </View>
+        </TouchableOpacity>
       </View>
     </View>
   );
