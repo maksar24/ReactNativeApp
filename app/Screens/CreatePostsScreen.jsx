@@ -1,4 +1,6 @@
 import {
+  Alert,
+  Image,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -11,8 +13,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { Camera, CameraView } from "expo-camera";
+import * as Location from "expo-location";
+// import {
+//   useCameraDevice,
+//   useCameraPermission,
+// } from "react-native-vision-camera";
 
 import { Colors } from "@/constants/Colors";
 
@@ -23,31 +31,98 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const CreatePostsScreen = ({ navigation }) => {
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
-  const [isDeletePressed, setIsDeletePressed] = useState(false);
+  const [imageUri, setImageUri] = useState(null);
   const [isPressed, setIsPressed] = useState(false);
+  const [cameraType, setCameraType] = useState("back");
+  const [hasPermission, setHasPermission] = useState(null);
+  const [coordinates, setCoordinates] = useState(null);
+  const cameraRef = useRef(null);
+
+  const isAllowed = !!imageUri && !!title && !!location;
+
+  //  ** Спосіб із використанням react-native-vision-camera **
+
+  // const { hasPermission, requestPermission } = useCameraPermission();
+  // const device = useCameraDevice("back");
+
+  // useEffect(() => {
+  //   (async () => {
+  //     const permission = await requestPermission();
+  //     if (!permission) {
+  //       console.log("Camera access denied");
+  //     }
+  //   })();
+  // }, []);
+
+  // const handleTakePhoto = async () => {
+  //   if (cameraRef.current) {
+  //     const photo = await cameraRef.current.takePhoto();
+  //     setImageUri(photo.uri);
+  //     console.log("Photo:", photo.uri);
+  //   }
+  // };
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await Camera.requestCameraPermissionsAsync();
+      setHasPermission(status === "granted");
+    })();
+  }, []);
 
   const handleBack = () => {
     navigation.goBack();
   };
 
-  const navigateToCameraScreen = () => {
-    console.log("Camera");
+  const handleTakePhoto = async ({ navigation }) => {
+    if (cameraRef.current) {
+      const photo = await cameraRef.current.takePictureAsync();
+      setImageUri(photo.uri);
+    }
   };
 
   const pickImage = () => {
     console.log("Download photo");
   };
 
-  const handlePublish = () => {
-    console.log({ title, location });
-    handleDelete();
+  const handlePublish = async () => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Geolocation access denied");
+      return;
+    }
+    if (!isAllowed) {
+      Alert.alert("All fields must be filled in, and there must be a photo.");
+      return;
+    }
+
+    try {
+      const locationData = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = locationData.coords;
+      setCoordinates({ latitude, longitude });
+
+      const newPost = {
+        title,
+        imageUri,
+        location,
+        coordinates: { latitude, longitude },
+      };
+
+      console.log("✅ Post created:", newPost);
+
+      Alert.alert("Post published!");
+
+      handleDelete();
+      navigation.navigate("Posts");
+    } catch (error) {
+      console.error("❌ Error getting geolocation:", error);
+      Alert.alert("Failed to get geolocation");
+    }
   };
 
   const handleDelete = () => {
+    setImageUri(null);
     setTitle("");
     setLocation("");
-    setIsDeletePressed(true);
-    console.log("Data cleared");
   };
 
   return (
@@ -73,9 +148,21 @@ const CreatePostsScreen = ({ navigation }) => {
           <ScrollView style={styles.section}>
             <View style={styles.imageContainer}>
               <View style={styles.emptyImgContainer}>
+                {imageUri ? (
+                  <Image
+                    source={{ uri: imageUri }}
+                    style={styles.cameraPreview}
+                  />
+                ) : (
+                  <CameraView
+                    style={styles.cameraPreview}
+                    ref={cameraRef}
+                    type={cameraType}
+                  />
+                )}
                 <TouchableOpacity
                   style={styles.cameraIconWrapper}
-                  onPress={navigateToCameraScreen}
+                  onPress={handleTakePhoto}
                   hitSlop={20}
                 >
                   <Icon name="camera" size={34} color={Colors.border_gray} />
@@ -116,15 +203,13 @@ const CreatePostsScreen = ({ navigation }) => {
             <View style={styles.buttonsContainer}>
               <Button
                 buttonStyle={
-                  !(title && location)
-                    ? { backgroundColor: Colors.light_gray }
-                    : {}
+                  !isAllowed ? { backgroundColor: Colors.light_gray } : {}
                 }
               >
                 <Text
                   style={[
                     styles.buttonText,
-                    !(title && location) && { color: Colors.text_gray },
+                    !isAllowed && { color: Colors.text_gray },
                   ]}
                   onPress={handlePublish}
                 >
@@ -215,6 +300,14 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     alignItems: "center",
     justifyContent: "center",
+  },
+  cameraPreview: {
+    width: "100%",
+    height: 240,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border_gray,
+    backgroundColor: Colors.light_gray,
   },
   input: {
     height: 50,
