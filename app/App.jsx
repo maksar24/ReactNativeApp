@@ -1,7 +1,10 @@
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useFonts } from "expo-font";
 import { NavigationContainer } from "@react-navigation/native";
 import StackNavigator from "./navigation/StackNavigator";
+import { Provider } from "react-redux";
+import { PersistGate } from "redux-persist/integration/react";
+import { store, persistor } from "./redux/store/store";
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -22,9 +25,13 @@ export default function App() {
   console.log("Rendering NavigationContainer");
 
   return (
-    <NavigationContainer>
-      <StackNavigator />
-    </NavigationContainer>
+    <Provider store={store}>
+      <PersistGate loading={<Text>Loading...</Text>} persistor={persistor}>
+        <NavigationContainer>
+          <StackNavigator />
+        </NavigationContainer>
+      </PersistGate>
+    </Provider>
   );
 }
 

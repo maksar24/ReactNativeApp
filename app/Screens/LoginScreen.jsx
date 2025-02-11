@@ -17,6 +17,10 @@ import { Colors } from "../../constants/Colors";
 
 import Input from "../../components/ui/CustomInput";
 import Button from "../../components/ui/CustomButton";
+import { useDispatch, useSelector } from "react-redux";
+import { setError, setLoading, setUser } from "../redux/store/authSlice";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../config";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("screen");
 
@@ -26,6 +30,11 @@ const LoginScreen = ({ navigation }) => {
     password: "",
   });
   const [isPasswordVisible, setIsPasswordVisible] = useState(true);
+
+  const loading = useSelector((state) => state.auth.loading);
+  const error = useSelector((state) => state.auth.error);
+
+  const dispatch = useDispatch();
 
   const handleInputChange = (field, value) => {
     setFormData((prevState) => ({
@@ -38,9 +47,33 @@ const LoginScreen = ({ navigation }) => {
     setIsPasswordVisible((prev) => !prev);
   };
 
-  const onSignIn = () => {
-    console.log("Sign in!", formData);
-    navigation.replace("Home");
+  const onSignIn = async () => {
+    dispatch(setLoading(true));
+    try {
+      const { email, password, login } = formData;
+
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+      const user = userCredential.user;
+
+      dispatch(
+        setUser({
+          uid: user.uid,
+          displayName: user.displayName,
+          email: user.email,
+        })
+      );
+
+      navigation.replace("Home");
+    } catch (err) {
+      dispatch(setError(err.message));
+    } finally {
+      dispatch(setLoading(false));
+    }
   };
 
   const onSignUp = () => {
@@ -102,8 +135,11 @@ const LoginScreen = ({ navigation }) => {
       </KeyboardAvoidingView>
 
       <View style={[styles.innerContainer, styles.buttonContainer]}>
-        <Button onPress={onSignIn}>
-          <Text style={[styles.baseText, styles.loginButtonText]}>Увійти</Text>
+        <Button onPress={onSignIn} disabled={loading}>
+          <Text style={[styles.baseText, styles.loginButtonText]}>
+            {" "}
+            {loading ? "Авторизація..." : "Увійти"}{" "}
+          </Text>
         </Button>
 
         <View style={styles.signInContainer}>

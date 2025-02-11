@@ -13,6 +13,10 @@ import data from "../data/posts.json";
 import IconButton from "@/components/ui/IconButton";
 import PostCard from "@/components/PostCard";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useDispatch, useSelector } from "react-redux";
+import { logout } from "../redux/store/authSlice";
+import { auth } from "../../config";
+import { signOut } from "firebase/auth";
 
 const images = {
   "forest.jpeg": require("@/assets/images/forest.jpeg"),
@@ -20,9 +24,20 @@ const images = {
   "home.jpeg": require("@/assets/images/home.jpeg"),
 };
 
-const PostsScreen = () => {
-  const handleLogout = () => {
-    console.log("Logout");
+const PostsScreen = ({ navigation }) => {
+  const user = useSelector((state) => state.auth.user);
+
+  const dispatch = useDispatch();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      dispatch(logout());
+      navigation.navigate("Login");
+    } catch (error) {
+      Alert.alert("Помилка", "Не вдалося вийти. Спробуйте ще раз.");
+      console.error("Logout Error:", error);
+    }
   };
 
   return (
@@ -45,8 +60,10 @@ const PostsScreen = () => {
           style={styles.avatar}
         />
         <View style={styles.userInfo}>
-          <Text style={styles.userName}>Natali Romanova</Text>
-          <Text style={styles.userEmail}>email@example.com</Text>
+          <Text style={styles.userName}>{user?.displayName || "Unknown"}</Text>
+          <Text style={styles.userEmail}>
+            {user?.email || "email@example.com"}
+          </Text>
         </View>
       </View>
 

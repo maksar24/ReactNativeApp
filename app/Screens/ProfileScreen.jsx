@@ -7,13 +7,13 @@ import {
   Text,
   Image,
 } from "react-native";
-import Icon from "react-native-vector-icons/Feather";
 
 import { Colors } from "../../constants/Colors";
 import data from "../data/posts.json";
 
 import IconButton from "@/components/ui/IconButton";
 import PostCard from "@/components/PostCard";
+import { useDispatch, useSelector } from "react-redux";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("screen");
 
@@ -24,8 +24,19 @@ const images = {
 };
 
 const RegistrationScreen = () => {
-  const handleLogout = () => {
-    console.log("Logout");
+  const user = useSelector((state) => state.auth.user);
+
+  const dispatch = useDispatch();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      dispatch(logout());
+      navigation.navigate("Login");
+    } catch (error) {
+      Alert.alert("Помилка", "Не вдалося вийти. Спробуйте ще раз.");
+      console.error("Logout Error:", error);
+    }
   };
 
   const handleChangeAvatar = async () => {
@@ -59,7 +70,7 @@ const RegistrationScreen = () => {
           />
         </View>
 
-        <Text style={styles.userName}>Natali Romanova</Text>
+        <Text style={styles.userName}>{user?.displayName || "Unknown"}</Text>
 
         <FlatList
           style={styles.postsContainer}

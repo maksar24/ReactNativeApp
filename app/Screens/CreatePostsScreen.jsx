@@ -27,6 +27,9 @@ import { Colors } from "@/constants/Colors";
 import IconButton from "@/components/ui/IconButton";
 import Button from "@/components/ui/CustomButton";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useDispatch } from "react-redux";
+import { auth } from "../../config";
+import { addPost } from "../redux/store/postsSlice";
 
 const CreatePostsScreen = ({ navigation }) => {
   const [title, setTitle] = useState("");
@@ -36,6 +39,8 @@ const CreatePostsScreen = ({ navigation }) => {
   const [cameraType, setCameraType] = useState("back");
   const [hasPermission, setHasPermission] = useState(null);
   const [coordinates, setCoordinates] = useState(null);
+
+  const dispatch = useDispatch();
   const cameraRef = useRef(null);
 
   const isAllowed = !!imageUri && !!title && !!location;
@@ -105,8 +110,11 @@ const CreatePostsScreen = ({ navigation }) => {
         imageUri,
         location,
         coordinates: { latitude, longitude },
+        userId: auth.currentUser?.uid,
+        createdAt: new Date().toISOString(),
       };
 
+      await dispatch(addPost(newPost));
       console.log("✅ Post created:", newPost);
 
       Alert.alert("Post published!");

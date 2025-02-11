@@ -18,6 +18,10 @@ import { Colors } from "../../constants/Colors";
 
 import Input from "../../components/ui/CustomInput";
 import Button from "../../components/ui/CustomButton";
+import { useDispatch, useSelector } from "react-redux";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { auth } from "../../config";
+import { setError, setLoading, setUser } from "../redux/store/authSlice";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("screen");
 
@@ -28,6 +32,11 @@ const RegistrationScreen = ({ navigation }) => {
     login: "",
   });
   const [isPasswordVisible, setIsPasswordVisible] = useState(true);
+
+  const loading = useSelector((state) => state.auth.loading);
+  const error = useSelector((state) => state.auth.error);
+
+  const dispatch = useDispatch();
 
   const handleInputChange = (field, value) => {
     setFormData((prevState) => ({
@@ -44,9 +53,35 @@ const RegistrationScreen = ({ navigation }) => {
     console.log("Add avatar");
   };
 
-  const onSignUp = () => {
-    console.log("Sign up!", formData);
-    navigation.replace("Home");
+  const onSignUp = async () => {
+    dispatch(setLoading(true));
+
+    try {
+      const { email, password, login } = formData;
+
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const user = userCredential.user;
+
+      await updateProfile(user, { displayName: login });
+
+      dispatch(
+        setUser({
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+        })
+      );
+
+      navigation.replace("Home");
+    } catch (err) {
+      dispatch(setError(err.message));
+    } finally {
+      dispatch(setLoading(false));
+    }
   };
 
   const onSignIn = () => {
@@ -119,9 +154,9 @@ const RegistrationScreen = ({ navigation }) => {
       </KeyboardAvoidingView>
 
       <View style={[styles.innerContainer, styles.buttonContainer]}>
-        <Button onPress={onSignUp}>
+        <Button onPress={onSignUp} disabled={loading}>
           <Text style={[styles.baseText, styles.loginButtonText]}>
-            Зареєстуватися
+            {loading ? "Реєстрація..." : "Зареєстуватися"}
           </Text>
         </Button>
 
